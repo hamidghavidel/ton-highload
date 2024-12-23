@@ -12,6 +12,8 @@ import (
 	w "ton-highload/pkg/wallet"
 )
 
+const configPath string = "../testnet-global.config.json"
+
 func main() {
 	ctx := context.Background()
 	rawMnemonic := "cancel fork visa lend trust skull bread spoon glimpse where pill beach party scene roof coast icon leaf frame knife extra polar twenty edit"
@@ -25,7 +27,7 @@ func main() {
 	//	return
 	//}
 
-	walletInfo, err := w.HighLoadV3(ctx, mnemonic, true)
+	walletInfo, err := w.HighLoadV3(ctx, configPath, mnemonic, true)
 	if err != nil {
 		log.Fatalln("HighLoadV3 err:", err.Error())
 		return

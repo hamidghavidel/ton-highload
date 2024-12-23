@@ -20,10 +20,9 @@ type Info struct {
 	PrivateKey  ed25519.PrivateKey
 }
 
-func NewClient(ctx context.Context) (*ton.APIClient, error) {
+func NewClient(ctx context.Context, configPath string) (*ton.APIClient, error) {
 	connection := liteclient.NewConnectionPool()
-	configUrl := "https://ton-blockchain.github.io/testnet-global.config.json"
-	err := connection.AddConnectionsFromConfigUrl(ctx, configUrl)
+	err := connection.AddConnectionsFromConfigFile(configPath)
 	if err != nil {
 		return nil, err
 	}
@@ -31,9 +30,9 @@ func NewClient(ctx context.Context) (*ton.APIClient, error) {
 	return client, nil
 }
 
-func HighLoadV3(ctx context.Context, seed []string, testnet bool) (Info, error) {
+func HighLoadV3(ctx context.Context, configPath string, seed []string, testnet bool) (Info, error) {
 	var i Info
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, configPath)
 	if err != nil {
 		return i, err
 	}
