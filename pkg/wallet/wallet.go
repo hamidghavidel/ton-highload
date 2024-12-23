@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+var QueryID = 2
+
 type Info struct {
 	W           *wallet.Wallet
 	Address     string
@@ -37,20 +39,22 @@ func HighLoadV3(ctx context.Context, configPath string, seed []string, testnet b
 		return i, err
 	}
 	w, err := wallet.FromSeed(client, seed, wallet.ConfigHighloadV3{
-		MessageTTL: 3000,
+		MessageTTL: 3600,
 		MessageBuilder: func(ctx context.Context, subWalletId uint32) (id uint32, createdAt int64, err error) {
 			createdAt = time.Now().Unix() - 30
-			return uint32(createdAt % (1 << 23)), createdAt, nil
+			return uint32(QueryID), createdAt, nil
 		},
 	})
-	fmt.Println("hi", w.WalletAddress().String())
+	if err != nil {
+		panic(err)
+	}
 
 	block, err := client.CurrentMasterchainInfo(ctx)
 	if err != nil {
 		return i, err
 	}
 
-	i.Address = w.WalletAddress().Testnet(testnet).String()
+	i.Address = w.WalletAddress().String()
 	balance, err := w.GetBalance(ctx, block)
 	if err != nil {
 		return i, err
@@ -59,6 +63,8 @@ func HighLoadV3(ctx context.Context, configPath string, seed []string, testnet b
 	i.Testnet = testnet
 	i.SubWalletID = w.GetSubwalletID()
 	i.PrivateKey = w.PrivateKey()
-	i.W = w
+	w1, _ := w.GetSubwallet(4269)
+	i.W = w1
+	fmt.Println("hi", w1.WalletAddress().String())
 	return i, nil
 }

@@ -2,23 +2,25 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
-	"github.com/xssnick/tonutils-go/address"
-	"github.com/xssnick/tonutils-go/tlb"
-	"github.com/xssnick/tonutils-go/ton/wallet"
-	"github.com/xssnick/tonutils-go/tvm/cell"
 	"log"
 	"strings"
 	w "ton-highload/pkg/wallet"
+
+	"github.com/xssnick/tonutils-go/address"
+	"github.com/xssnick/tonutils-go/tlb"
+	// "github.com/xssnick/tonutils-go/ton/jetton"
+	"github.com/xssnick/tonutils-go/ton/wallet"
+	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-const configPath string = "../testnet-global.config.json"
+const configPath string = "./testnet-global.config.json"
 
 func main() {
 	ctx := context.Background()
 	rawMnemonic := "cancel fork visa lend trust skull bread spoon glimpse where pill beach party scene roof coast icon leaf frame knife extra polar twenty edit"
 	mnemonic := strings.Split(rawMnemonic, " ")
-
 	//client, err := w.NewClient(ctx)
 
 	//block, err := client.CurrentMasterchainInfo(ctx) // get current block, we will need it in requests to LiteServer
@@ -35,7 +37,7 @@ func main() {
 	fmt.Println("walletInfo:", walletInfo)
 
 	destinationAddress := address.MustParseAddr("0QDRGONvd2MFtX3X7qVUdeYtk31KLbuqV6IKuZ67CM5dePnq")
-	//sourceAddress := address.MustParseAddr(walletInfo.Address)
+	// sourceAddress := address.MustParseAddr(walletInfo.Address)
 	//internalMessageBody := cell.BeginCell().
 	//	MustStoreUInt(0, 32).                // write 32 zero bits to indicate that a text comment will follow
 	//	MustStoreStringSnake("Hello, TON!"). // write our text comment
@@ -85,25 +87,52 @@ func main() {
 	//	MustStoreBuilder(toSign).       // store our message
 	//	EndCell()
 	//
-	//externalMessage := cell.BeginCell().
-	//	MustStoreUInt(0b10, 2). // 0b10 -> 10 in binary
-	//	//MustStoreUInt(0, 2).               // src -> addr_none
-	//	MustStoreAddr(sourceAddress).      // Source address
-	//	MustStoreAddr(destinationAddress). // Destination address
-	//	MustStoreCoins(0).                 // Import Fee
-	//	MustStoreBoolBit(false).           // No State Init
-	//	MustStoreBoolBit(true).            // We store Message Body as a reference
-	//	MustStoreRef(body).                // Store Message Body as a reference
-	//	EndCell()
+	// externalMessage := cell.BeginCell().
+	// 	MustStoreUInt(0b10, 2). // 0b10 -> 10 in binary
+	// 	//MustStoreUInt(0, 2).               // src -> addr_none
+	// 	MustStoreAddr(sourceAddress).      // Source address
+	// 	MustStoreAddr(destinationAddress). // Destination address
+	// 	MustStoreCoins(0).                 // Import Fee
+	// 	MustStoreBoolBit(false).           // No State Init
+	// 	MustStoreBoolBit(true).            // We store Message Body as a reference
+	// 	MustStoreRef(body).                // Store Message Body as a reference
+	// 	EndCell()
+	// msg1 := tlb.Message{
+	// 	MsgType: "INTERNAL",
+	// 	Msg: ,
+	// }
+	
+	payload := cell.BeginCell().MustStoreUInt(0, 32).MustStoreStringSnake("1234567").EndCell()
+	msg1 := wallet.Message{
+		Mode: wallet.PayGasSeparately + wallet.IgnoreErrors,
+		InternalMessage: &tlb.InternalMessage{
+			IHRDisabled: true,
+			Bounce:      true,
+			DstAddr:     destinationAddress,
+			Amount:      tlb.MustFromTON("0.01"),
+			Body:        payload,
+		},
+	}
 
-	payload := cell.BeginCell().MustStoreUInt(0, 32).EndCell()
-	msg := wallet.SimpleMessage(destinationAddress, tlb.MustFromTON("0.01"), payload)
+	// tlb.ExternalMessage{}
 
-	err = walletInfo.W.Send(ctx, msg, true)
+	// msg := wallet.SimpleMessage(destinationAddress, tlb.MustFromTON("0.01"), payload)
+
+	ext, err := walletInfo.W.PrepareExternalMessageForMany(ctx, false, []*wallet.Message{&msg1})
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("sent tx")
+	boc, err := tlb.ToCell(ext)
+	if err != nil {
+		panic(err)
+	}
+	tx := boc.ToBOCWithFlags(false)
+	b := base64.StdEncoding.EncodeToString(tx)
+	fmt.Println(b)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Println("sent tx")
 	//log.Println("Prepared external message:", base64.StdEncoding.EncodeToString(externalMessage.ToBOCWithFlags(false)))
 	//
 	//var resp tl.Serializable
